@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<package>
+  <name>rqt_batteries</name>
+  <version>0.0.1</version>
+  <description>rqt_batteries is a GUI that just shows batteries status
+  </description>
+
+  <author email="sam.pfeiffer@pal-robotics.com">Sammy Pfeiffer</author>
+  <maintainer email="sam.pfeiffer@pal-robotics.com">Devon Ash</maintainer>
+  <license>Proprietary</license>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>rospy</run_depend>
+  <run_depend>rqt_gui</run_depend>
+  <run_depend>rqt_gui_py</run_depend>
+  <run_depend>rqt_robot_dashboard</run_depend>
+  <run_depend>std_msgs</run_depend>
+
+  <export>
+    <rqt_gui plugin="${prefix}/plugin.xml"/>
+  </export>
+</package>
+
+
