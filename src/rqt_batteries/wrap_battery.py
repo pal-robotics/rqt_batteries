@@ -29,7 +29,7 @@ class WrappedBattery(BatteryDashWidget):
 
         icon_paths = []
         icon_paths.append(['rqt_batteries', 'images'])
-
+        self._wrapped_battery_name = name
         super(WrappedBattery, self).__init__(name=name,
                                                   icons=icons, charge_icons=charge_icons,
                                                   icon_paths=icon_paths,
@@ -41,6 +41,7 @@ class WrappedBattery(BatteryDashWidget):
     def set_power_state_perc(self, percentage, charging):
         """
         """
+        print self._wrapped_battery_name + " updating with values: " + str(percentage) + "% and charging: " + str(charging)
         self.update_perc(percentage)
         self.update_time(percentage) # + remaining
         self.set_charging(charging)

@@ -9,7 +9,7 @@ from std_msgs.msg import Float32, Bool
 from .wrap_battery import WrappedBattery
 
 
-class SurveillanceDashboard(Dashboard):
+class BatteriesDashboard(Dashboard):
     """
     Dashboard for Batteries
 
@@ -21,13 +21,13 @@ class SurveillanceDashboard(Dashboard):
         self.max_icon_size = QSize(50, 30)
 
         self._last_dashboard_message_time = rospy.Time.now()
-        self._batteries = []
+        self._widget_initialized = False
 
         NAMESPACE = '/batteries_dashboard'
         if rospy.has_param(NAMESPACE):
             # rosparam set /batteries_dashboard/batteries "{'battery1': {'percentage_topic': '/percentage1', 'charging_topic': '/charging1', 'tooltip_name': 'BATT1'}}"
             # rosparam set /batteries_dashboard/batteries "{'battery2': {'percentage_topic': '/percentage2', 'charging_topic': '/charging2', 'tooltip_name': 'BATT2'}}"
-            self._batteries_dict = rospy.get_param(NAMESPACE + '/batteries')
+            self._batteries_list = rospy.get_param(NAMESPACE + '/batteries')
             # Looks like:
             # {'battery1': {'battery_name': 'BATT1',
             #  'charging_topic': '/charging1',
@@ -40,36 +40,42 @@ class SurveillanceDashboard(Dashboard):
             rospy.logerr("You must set /batteries_dashboard parameters to use this plugin. e.g.:\n" +
                          "rosparam set /batteries_dashboard/batteries \"{'battery1': {'percentage_topic': '/percentage1', 'charging_topic': '/charging1', 'battery_name': 'BATT1'}}\"")
 
-        for battery in self._batteries_dict.keys():
-            batt_dict_name = battery
-            percentage_topic = self._batteries_dict[battery].get('percentage_topic', None)
-            charging_topic = self._batteries_dict[battery].get('charging_topic', None)
-            tooltip_name = self._batteries_dict[battery].get('tooltip_name', None)
-            rospy.loginfo("Battery: " + str(batt_dict_name) + " has percentage topic: " +
-                str(percentage_topic)  +  " and charging topic: " + str(charging_topic) +
-                          " and has tooltip name: " + str(tooltip_name))
+        for battery_elem in self._batteries_list: # list of all batteries to monitor
+            for battery_name in battery_elem.keys(): # there is only one key which is the name
+                percentage_topic = battery_elem[battery_name].get('percentage_topic', None)
+                charging_topic = battery_elem[battery_name].get('charging_topic', None)
+                tooltip_name = battery_elem[battery_name].get('tooltip_name', None)
+                rospy.loginfo("Battery: " + str(battery_name) + " has percentage topic: " +
+                    str(percentage_topic)  +  " and charging topic: " + str(charging_topic) +
+                              " and has tooltip name: " + str(tooltip_name))
 
-            self._batteries_dict[battery].update({'current_percentage': 0.0})
-            self._batteries_dict[battery].update({'percentage_sub': rospy.Subscriber(percentage_topic,
-                                                                            Float32,
-                                                                            self.dashboard_callback,
-                                                                            callback_args=batt_dict_name,
-                                                                            queue_size=1)})
-
-            self._batteries_dict[battery].update({'charging_status': False})
-            if charging_topic:
-                self._batteries_dict[battery].update({'charging_topic': rospy.Subscriber(charging_topic,
-                                                                                Bool,
+                battery_elem[battery_name].update({'current_percentage': 0.0})
+                battery_elem[battery_name].update({'percentage_sub': rospy.Subscriber(percentage_topic,
+                                                                                Float32,
                                                                                 self.dashboard_callback,
-                                                                                callback_args=batt_dict_name,
+                                                                                callback_args=battery_name,
                                                                                 queue_size=1)})
 
-            # Setup the widget
-            self._batteries.append(WrappedBattery(self.context, name=tooltip_name))
+                battery_elem[battery_name].update({'charging_status': False})
+                if charging_topic:
+                    battery_elem[battery_name].update({'charging_sub': rospy.Subscriber(charging_topic,
+                                                                                    Bool,
+                                                                                    self.dashboard_callback,
+                                                                                    callback_args=battery_name,
+                                                                                    queue_size=1)})
+
+                # Setup the widget
+                battery_elem[battery_name].update({'battery_widget': WrappedBattery(self.context, name=tooltip_name)})
+
+        self._widget_initialized = True
 
 
     def get_widgets(self):
-        return [self._batteries]
+        widgets_list = []
+        for battery_elem in self._batteries_list:
+            for battery_name in battery_elem.keys():
+                widgets_list.append([battery_elem[battery_name]['battery_widget']])
+        return widgets_list
 
     def dashboard_callback(self, msg, cb_args):
         """
@@ -80,31 +86,46 @@ class SurveillanceDashboard(Dashboard):
         :param cb_args:
         :type cb_args: str
         """
+        if not self._widget_initialized:
+            return
+        battery_name = cb_args
         # The type makes us know if the callback was fired up
         # from the percentage subscriber or the charging status topic
         if type(msg) == Bool:
             # The cb_args has the name of the battery in the dictionary
-            self._batteries_dict[cb_args].update({'charging_status': msg.data})
+            for battery_elem in self._batteries_list:
+                if battery_elem.has_key(battery_name):
+                    battery_elem[battery_name].update({'charging_status': msg.data})
 
         if type(msg) == Float32:
-            self._batteries_dict[cb_args].update({'current_percentage': msg.data})
+            for battery_elem in self._batteries_list:
+                if battery_elem.has_key(battery_name):
+                    battery_elem[battery_name].update({'current_percentage': msg.data})
 
-
-        if (rospy.Time.now() - self._last_dashboard_message_time) < rospy.Duration(1.0): # Let's throttle to 1hz
+        # Throttling to 1Hz the update of the widget whatever the rate of the topics is
+        if (rospy.Time.now() - self._last_dashboard_message_time) < rospy.Duration(1.0):
             return
         self._last_dashboard_message_time = rospy.Time.now()
 
         # Update all widgets
-        for battery in self._batteries_dict.keys():
-            # TODO: UPDATE FOR EACH, AND FIGURE OUT THE CHARGING THINGY
-        self._batteries[0].set_power_state_perc(self._last_batteries_values[0], False)
+        for battery_elem in self._batteries_list:
+            for battery_name in battery_elem.keys():
+                battery_elem[battery_name]['battery_widget'].set_power_state_perc(
+                     battery_elem[battery_name]['current_percentage'], battery_elem[battery_name]['charging_status'])
+                rospy.loginfo("Updated " + str(battery_name) + " with "
+                              + str(round(battery_elem[battery_name]['current_percentage']))
+                              + "% battery and is "
+                              + ("charging." if battery_elem[battery_name].get('charging_status') else "not charging."))
 
-        rospy.loginfo("Updated battery values with: " + str(self._last_batteries_values) )
 
 
     def shutdown_dashboard(self):
-        self._battery_summit_topic_sub.unregister()
-        self._battery_multimedia_topic_sub.unregister()
+        for battery_elem in self._batteries_list:
+            for battery_name in battery_elem.keys():
+                if battery_elem[battery_name]['percentage_sub']:
+                    battery_elem[battery_name]['percentage_sub'].unregister()
+                if battery_elem[battery_name]['charging_sub']:
+                    battery_elem[battery_name]['charging_sub'].unregister()
 
     def save_settings(self, plugin_settings, instance_settings):
         # self._console.save_settings(plugin_settings, instance_settings)
