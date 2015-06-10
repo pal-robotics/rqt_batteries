@@ -6,8 +6,8 @@
   </description>
 
   <author email="sam.pfeiffer@pal-robotics.com">Sammy Pfeiffer</author>
-  <maintainer email="sam.pfeiffer@pal-robotics.com">Devon Ash</maintainer>
-  <license>Proprietary</license>
+  <maintainer email="sam.pfeiffer@pal-robotics.com">Sammy Pfeiffer</maintainer>
+  <license>BSD</license>
 
 
   <buildtool_depend>catkin</buildtool_depend>

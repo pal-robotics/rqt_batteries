@@ -7,6 +7,7 @@ from python_qt_binding.QtGui import QMessageBox
 
 from std_msgs.msg import Float32, Bool
 from .wrap_battery import WrappedBattery
+from .emergency_button import EmergencyButton
 
 
 class BatteriesDashboard(Dashboard):
@@ -27,7 +28,11 @@ class BatteriesDashboard(Dashboard):
         if rospy.has_param(NAMESPACE):
             # rosparam set /batteries_dashboard/batteries "{'battery1': {'percentage_topic': '/percentage1', 'charging_topic': '/charging1', 'tooltip_name': 'BATT1'}}"
             # rosparam set /batteries_dashboard/batteries "{'battery2': {'percentage_topic': '/percentage2', 'charging_topic': '/charging2', 'tooltip_name': 'BATT2'}}"
-            self._batteries_list = rospy.get_param(NAMESPACE + '/batteries')
+            # rosparam set /batteries_dashboard/emergency_button "{'emergency1': {'pressed_topic': '/emergency1', 'tooltip_name': 'EMERGENCY1'}}"
+            if rospy.has_param(NAMESPACE + '/batteries'):
+                self._batteries_list = rospy.get_param(NAMESPACE + '/batteries')
+            else:
+                rospy.logwarn("No batteries to monitor found in param server under " + NAMESPACE)
             # Looks like:
             # {'battery1': {'battery_name': 'BATT1',
             #  'charging_topic': '/charging1',
@@ -39,6 +44,7 @@ class BatteriesDashboard(Dashboard):
         else:
             rospy.logerr("You must set /batteries_dashboard parameters to use this plugin. e.g.:\n" +
                          "rosparam set /batteries_dashboard/batteries \"{'battery1': {'percentage_topic': '/percentage1', 'charging_topic': '/charging1', 'battery_name': 'BATT1'}}\"")
+            exit(-1)
 
         for battery_elem in self._batteries_list: # list of all batteries to monitor
             for battery_name in battery_elem.keys(): # there is only one key which is the name
@@ -53,7 +59,7 @@ class BatteriesDashboard(Dashboard):
                 battery_elem[battery_name].update({'percentage_sub': rospy.Subscriber(percentage_topic,
                                                                                 Float32,
                                                                                 self.dashboard_callback,
-                                                                                callback_args=battery_name,
+                                                                                callback_args={'battery': battery_name},
                                                                                 queue_size=1)})
 
                 battery_elem[battery_name].update({'charging_status': False})
@@ -61,7 +67,7 @@ class BatteriesDashboard(Dashboard):
                     battery_elem[battery_name].update({'charging_sub': rospy.Subscriber(charging_topic,
                                                                                     Bool,
                                                                                     self.dashboard_callback,
-                                                                                    callback_args=battery_name,
+                                                                                    callback_args={'battery': battery_name},
                                                                                     queue_size=1)})
 
                 # Setup the widget
@@ -84,23 +90,23 @@ class BatteriesDashboard(Dashboard):
         :param msg:
         :type msg: Float32 or Bool
         :param cb_args:
-        :type cb_args: str
+        :type cb_args: dictionary
         """
         if not self._widget_initialized:
             return
-        battery_name = cb_args
-        # The type makes us know if the callback was fired up
-        # from the percentage subscriber or the charging status topic
-        if type(msg) == Bool:
-            # The cb_args has the name of the battery in the dictionary
-            for battery_elem in self._batteries_list:
-                if battery_elem.has_key(battery_name):
-                    battery_elem[battery_name].update({'charging_status': msg.data})
 
-        if type(msg) == Float32:
-            for battery_elem in self._batteries_list:
-                if battery_elem.has_key(battery_name):
-                    battery_elem[battery_name].update({'current_percentage': msg.data})
+        if cb_args.has_key('battery'):
+            battery_name = cb_args['battery']
+            if type(msg) == Bool:
+                for battery_elem in self._batteries_list:
+                    if battery_elem.has_key(battery_name):
+                        battery_elem[battery_name].update({'charging_status': msg.data})
+
+            if type(msg) == Float32:
+                for battery_elem in self._batteries_list:
+                    if battery_elem.has_key(battery_name):
+                        battery_elem[battery_name].update({'current_percentage': msg.data})
+
 
         # Throttling to 1Hz the update of the widget whatever the rate of the topics is
         if (rospy.Time.now() - self._last_dashboard_message_time) < rospy.Duration(1.0):
@@ -116,7 +122,6 @@ class BatteriesDashboard(Dashboard):
                               + str(round(battery_elem[battery_name]['current_percentage']))
                               + "% battery and is "
                               + ("charging." if battery_elem[battery_name].get('charging_status') else "not charging."))
-
 
 
     def shutdown_dashboard(self):
