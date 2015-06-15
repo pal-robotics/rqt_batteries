@@ -1,9 +1,31 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# rqt_batteries: batteries_dashboard.py
+#
+# Copyright (c) 2015 PAL Robotics SL. All Rights Reserved
+#
+# Permission to use, copy, modify, and/or distribute this software for
+# any purpose with or without fee is hereby granted, provided that the
+# above copyright notice and this permission notice appear in all
+# copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES WITH
+# REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL ISC BE LIABLE FOR ANY
+# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+# OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# Authors:
+#   * Sammy Pfeiffer
+
 import rospy
 
 from rqt_robot_dashboard.dashboard import Dashboard
 
 from python_qt_binding.QtCore import QSize
-from python_qt_binding.QtGui import QMessageBox
 
 from std_msgs.msg import Float32, Bool
 from .wrap_battery import WrappedBattery
@@ -106,7 +128,7 @@ class BatteriesDashboard(Dashboard):
                         battery_elem[battery_name].update({'current_percentage': msg.data})
 
 
-        # Throttling to 1Hz the update of the widget whatever the rate of the topics is
+        # Throttling to 1Hz the update of the widget whatever the rate of the topics is, maybe make it configurable?
         if (rospy.Time.now() - self._last_dashboard_message_time) < rospy.Duration(1.0):
             return
         self._last_dashboard_message_time = rospy.Time.now()
@@ -129,13 +151,3 @@ class BatteriesDashboard(Dashboard):
                     battery_elem[battery_name]['percentage_sub'].unregister()
                 if battery_elem[battery_name]['charging_sub']:
                     battery_elem[battery_name]['charging_sub'].unregister()
-
-    def save_settings(self, plugin_settings, instance_settings):
-        # self._console.save_settings(plugin_settings, instance_settings)
-        # self._monitor.save_settings(plugin_settings, instance_settings)
-        pass
-
-    def restore_settings(self, plugin_settings, instance_settings):
-        # self._console.restore_settings(plugin_settings, instance_settings)
-        # self._monitor.restore_settings(plugin_settings, instance_settings)
-        pass

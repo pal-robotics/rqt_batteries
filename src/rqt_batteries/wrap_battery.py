@@ -1,9 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# rqt_batteries: wrap_battery.py
+#
+# Copyright (c) 2015 PAL Robotics SL. All Rights Reserved
+#
+# Permission to use, copy, modify, and/or distribute this software for
+# any purpose with or without fee is hereby granted, provided that the
+# above copyright notice and this permission notice appear in all
+# copies.
+#
+# THE SOFTWARE IS PROVIDED "AS IS" AND ISC DISCLAIMS ALL WARRANTIES WITH
+# REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL ISC BE LIABLE FOR ANY
+# SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+# OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+#
+# Authors:
+#   * Sammy Pfeiffer
 
-
-from python_qt_binding.QtCore import QSize
 from rqt_robot_dashboard.widgets import BatteryDashWidget
-import rospkg
-import os
+
 
 class WrappedBattery(BatteryDashWidget):
     """

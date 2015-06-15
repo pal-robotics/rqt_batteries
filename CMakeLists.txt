@@ -8,6 +8,14 @@ install(FILES plugin.xml
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 )
 
-install(PROGRAMS scripts/rqt_batteries
+install(PROGRAMS
+  scripts/rqt_batteries
+  scripts/test_plugin.py
+
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
+foreach (dir launch config)
+ install(DIRECTORY ${dir}/
+ DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/${dir})
+endforeach(dir)
