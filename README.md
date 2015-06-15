@@ -8,3 +8,6 @@ The necessary parameters are:
 
 Topic(s) with Float32 data showing the percentage of battery left.
 Topic(s) with Bool data showing if charging the battery.
+
+Example parameter server configuration can be found in the
+ config folder.

@@ -7,7 +7,6 @@ from python_qt_binding.QtGui import QMessageBox
 
 from std_msgs.msg import Float32, Bool
 from .wrap_battery import WrappedBattery
-from .emergency_button import EmergencyButton
 
 
 class BatteriesDashboard(Dashboard):
@@ -28,11 +27,10 @@ class BatteriesDashboard(Dashboard):
         if rospy.has_param(NAMESPACE):
             # rosparam set /batteries_dashboard/batteries "{'battery1': {'percentage_topic': '/percentage1', 'charging_topic': '/charging1', 'tooltip_name': 'BATT1'}}"
             # rosparam set /batteries_dashboard/batteries "{'battery2': {'percentage_topic': '/percentage2', 'charging_topic': '/charging2', 'tooltip_name': 'BATT2'}}"
-            # rosparam set /batteries_dashboard/emergency_button "{'emergency1': {'pressed_topic': '/emergency1', 'tooltip_name': 'EMERGENCY1'}}"
             if rospy.has_param(NAMESPACE + '/batteries'):
                 self._batteries_list = rospy.get_param(NAMESPACE + '/batteries')
             else:
-                rospy.logwarn("No batteries to monitor found in param server under " + NAMESPACE)
+                rospy.logwarn("No batteries to monitor found in param server under " + NAMESPACE + "/batteries")
             # Looks like:
             # {'battery1': {'battery_name': 'BATT1',
             #  'charging_topic': '/charging1',
@@ -118,7 +116,7 @@ class BatteriesDashboard(Dashboard):
             for battery_name in battery_elem.keys():
                 battery_elem[battery_name]['battery_widget'].set_power_state_perc(
                      battery_elem[battery_name]['current_percentage'], battery_elem[battery_name]['charging_status'])
-                rospy.loginfo("Updated " + str(battery_name) + " with "
+                rospy.logdebug("Updated " + str(battery_name) + " with "
                               + str(round(battery_elem[battery_name]['current_percentage']))
                               + "% battery and is "
                               + ("charging." if battery_elem[battery_name].get('charging_status') else "not charging."))

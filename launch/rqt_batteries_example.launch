@@ -1,0 +1,4 @@
+<launch>
+	<rosparam file="$(find rqt_batteries)/config/batteries_dashboard.yaml" command="load" />
+	<node pkg="rqt_batteries" type="rqt_batteries" name="rqt_batteries" output="screen" />
+</launch>

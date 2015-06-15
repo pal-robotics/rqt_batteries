@@ -1,0 +1,10 @@
+batteries_dashboard:
+    batteries:
+        - battery1:
+            percentage_topic: /percentage1
+            charging_topic: /charging1
+            tooltip_name: BATT1
+        - battery2:
+            percentage_topic: /percentage2
+            charging_topic: /charging2
+            tooltip_name: BATT2
